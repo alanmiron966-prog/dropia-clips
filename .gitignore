@@ -1,0 +1,22 @@
+# Lista blanca: solo se sube lo que va en el zip de empaquetar.py. Lo personal (secrets/, tokens, cookies,
+# trabajo/, canales.json, copias _antes) queda fuera porque nada lo deja pasar.
+/*
+!.gitignore
+!app.py
+!chat_clips.py
+!montar.py
+!youtube.py
+!tiktok.py
+!ui.html
+!dropia.ico
+!instalar.bat
+!instalar.py
+!requirements.txt
+!README.md
+!empaquetar.py
+!fuentes/
+!bin/
+!guia/
+!web/
+*.pdb
+__pycache__/

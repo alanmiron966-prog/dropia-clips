@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DROPIA Clips</title>
+<style>
+  :root { --fondo:#120d0a; --caja:#1d1511; --texto:#f3e9dc; --suave:#b9a896; --acento:#ff8a3d; --linea:#3a2c22; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--fondo); color:var(--texto); font:15px/1.45 system-ui, sans-serif; }
+  main { max-width:1100px; margin:0 auto; padding:24px 16px 80px; }
+  h1 { font-size:28px; margin:0 0 4px; letter-spacing:.5px; } h1 b { color:var(--acento); }
+  .sub { color:var(--suave); margin:0 0 20px; }
+  form { display:flex; gap:8px; flex-wrap:wrap; background:var(--caja); padding:14px; border-radius:12px; }
+  input { background:#0d0907; color:var(--texto); border:1px solid var(--linea); border-radius:8px; padding:10px 12px; font:inherit; }
+  input[name=url] { flex:1 1 380px; } input[name=juego] { flex:0 1 220px; }
+  button { background:var(--acento); color:#1a0f08; border:0; border-radius:8px; padding:10px 16px; font:inherit; font-weight:700; cursor:pointer; }
+  button.gris { background:#3a2c22; color:var(--texto); }
+  button:disabled { opacity:.5; cursor:default; }
+  .trabajo { background:var(--caja); border-radius:12px; padding:16px; margin-top:18px; }
+  .cab { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:baseline; }
+  .cab h2 { margin:0; font-size:19px; } .cab a { color:var(--suave); font-size:13px; }
+  .estado { color:var(--acento); font-weight:600; margin:6px 0 10px; }
+  .estado.ok { color:#7fd18b; } .estado.err { color:#ff6b6b; }
+  .fallo { background:#3a1515; border:1px solid #ff6b6b; border-radius:10px; padding:12px 14px; margin:6px 0 10px; color:#ffd9d9; }
+  .fallo b { color:#ff6b6b; display:block; margin-bottom:4px; }
+  #avisos { position:fixed; top:16px; left:50%; transform:translateX(-50%); width:min(560px, calc(100% - 32px)); z-index:10; }
+  #avisos .fallo { box-shadow:0 8px 30px rgba(0,0,0,.5); display:flex; gap:12px; align-items:flex-start; }
+  #avisos .fallo div { flex:1; } #avisos button { background:none; border:0; color:#ffd9d9; font-size:20px; cursor:pointer; padding:0 4px; }
+  .avance { margin:0 0 10px; } .avance .chat { max-height:none; }
+  .barra { height:10px; background:#0d0907; border:1px solid var(--linea); border-radius:6px; overflow:hidden; margin-bottom:4px; }
+  .barra i { display:block; height:100%; width:0; background:var(--acento); transition:width .8s linear; }
+  .barra.indef i { width:30%; animation:ir 1.5s ease-in-out infinite; }
+  @keyframes ir { from { margin-left:-30%; } to { margin-left:100%; } }
+  @media (prefers-reduced-motion: reduce) { .barra.indef i { animation:none; width:100%; opacity:.4; } }
+  .camara { border:1px dashed var(--acento); border-radius:10px; padding:12px; margin:10px 0; }
+  .lienzo { position:relative; display:inline-block; cursor:crosshair; user-select:none; max-width:100%; }
+  .lienzo img { display:block; max-width:100%; border-radius:6px; }
+  .rect { position:absolute; border:3px solid var(--acento); background:rgba(255,138,61,.15); pointer-events:none; }
+  .rejilla { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:12px; align-items:start; }
+  .pico { background:#0d0907; border:1px solid var(--linea); border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:8px; }
+  .pico img, .pico video { width:100%; border-radius:6px; background:#000; }
+  .pico video { aspect-ratio:9/16; max-height:420px; object-fit:contain; }
+  .pico video.bruto { aspect-ratio:16/9; }
+  .meta { display:flex; justify-content:space-between; font-size:13px; color:var(--suave); }
+  .meta b { color:var(--texto); }
+  .chat { font-size:12px; color:var(--suave); max-height:54px; overflow:hidden; }
+  .fila { display:flex; gap:6px; } .fila input { flex:1; min-width:0; padding:8px; }
+  a.bajar { color:var(--acento); font-weight:600; font-size:14px; }
+  #yt a { color:var(--acento); }
+  .cifras { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin:12px 0; }
+  .cifra { background:#0d0907; border:1px solid var(--linea); border-radius:10px; padding:12px; }
+  .cifra b { display:block; font-size:26px; color:var(--acento); } .cifra span { color:var(--suave); font-size:13px; }
+  .tabla { width:100%; border-collapse:collapse; font-size:14px; } .tabla td, .tabla th { padding:8px 6px; border-top:1px solid var(--linea); text-align:left; }
+  .tabla th { color:var(--suave); font-weight:500; } .tabla td.n, .tabla th.n { text-align:right; } .tabla a { color:var(--texto); }
+  .tablaca { overflow-x:auto; } #panel .aviso { color:var(--suave); font-size:13px; } #panel .aviso a { color:var(--acento); }
+  .vacio { color:var(--suave); margin-top:24px; }
+  .tt { margin-top:8px; } .tt summary { cursor:pointer; color:var(--acento); } .tt select { width:100%; margin:6px 0; }
+  .tt label { font-size:13px; margin-right:12px; } .tt a { color:var(--acento); }
+  /* Diseño DROPIA: barra lateral oscura, zona de trabajo clara, acento naranja */
+  :root { --fondo:#f4f1ee; --caja:#fff; --texto:#1c1410; --suave:#7a6a5d; --acento:#ff6a1a; --linea:#e7e0d9; }
+  body { display:grid; grid-template-columns:240px 1fr; min-height:100vh; }
+  .lado { --texto:#f3e9dc; --suave:#a8978a; --linea:#2e241d; background:#15100c; color:var(--texto); padding:20px 14px; position:sticky; top:0; height:100vh; display:flex; flex-direction:column; gap:18px; }
+  .logo { font-size:20px; font-weight:800; display:flex; align-items:center; gap:8px; } .logo b { color:var(--acento); }
+  .logo span { background:var(--acento); color:#fff; border-radius:8px; width:30px; height:30px; display:grid; place-items:center; }
+  .lado nav { display:flex; flex-direction:column; gap:4px; }
+  .lado nav button { display:flex; justify-content:flex-start; width:100%; padding:9px 12px; border-radius:8px; color:var(--suave); background:none; box-shadow:none; font-weight:600; }
+  .lado nav button:hover { color:var(--texto); background:rgba(255,255,255,.06); }
+  .lado nav button.activo { background:var(--acento); color:#fff; }
+  .lado .sub { font-size:13px; margin:0; }
+  .cuentas { margin-top:auto; display:flex; flex-direction:column; gap:8px; border-top:1px solid var(--linea); padding-top:14px; }
+  main { max-width:1200px; width:100%; padding:28px 28px 80px; }
+  h1 { font-size:24px; }
+  form, .trabajo { border:1px solid var(--linea); box-shadow:0 1px 3px rgba(0,0,0,.05); }
+  input, select { background:#fff; color:var(--texto); border:1px solid var(--linea); }
+  input:focus, select:focus { outline:2px solid var(--acento); outline-offset:-1px; }
+  button { color:#fff; }
+  button.gris { background:#f0ebe6; color:var(--texto); border:1px solid var(--linea); }
+  .pico { background:#fff; border-radius:14px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+  .pico video { border-radius:10px; }
+  .meta span:last-child { background:var(--acento); color:#fff; border-radius:999px; padding:1px 8px; font-weight:700; }
+  .barra, .cifra { background:#faf8f6; }
+  .fallo { background:#fff1f0; color:#7a1f1f; border-color:#f3b1ab; } .fallo b { color:#c62828; }
+  #avisos button { color:#7a1f1f !important; }
+  .estado.ok { color:#2e7d32; } .estado.err { color:#c62828; }
+  @media (max-width:760px) { body { display:block; } .lado { position:static; height:auto; } main { padding:20px 16px 80px; } }
+  /* Botones y pestañas */
+  body { font:15px/1.5 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
+  button { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:38px; padding:0 16px; border-radius:10px;
+    font-weight:600; font-size:14px; background:var(--acento); color:#fff; box-shadow:0 1px 2px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.18);
+    transition:background .15s, box-shadow .15s, border-color .15s, transform .05s; }
+  button:hover:not(:disabled) { background:#f05a0a; box-shadow:0 4px 12px rgba(255,106,26,.28); }
+  button:active:not(:disabled) { transform:translateY(1px); }
+  button:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid var(--acento); outline-offset:2px; }
+  button.gris { background:#fff; color:var(--texto); border:1px solid var(--linea); box-shadow:0 1px 2px rgba(0,0,0,.05); }
+  button.gris:hover:not(:disabled) { background:#faf7f4; border-color:#d6ccc2; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  #avisos button { min-height:0; box-shadow:none; }
+  .pico > button, .tt button { width:100%; }
+  a.bajar { display:inline-flex; align-items:center; justify-content:center; min-height:36px; border-radius:10px; border:1px solid var(--linea);
+    color:var(--texto); text-decoration:none; font-size:13px; font-weight:600; background:#fff; transition:background .15s, border-color .15s; }
+  a.bajar:hover { background:#faf7f4; border-color:#d6ccc2; }
+  .tt summary { font-weight:600; padding:6px 0; }
+  .pestanas { display:flex; gap:4px; flex-wrap:wrap; margin:22px 0 4px; padding:4px; background:#ebe5df; border-radius:12px; width:fit-content; max-width:100%; }
+  .pestanas button { min-height:32px; padding:0 14px; background:transparent; color:var(--suave); box-shadow:none; font-size:13px; border-radius:9px; }
+  .pestanas button:hover:not(:disabled) { background:rgba(255,255,255,.6); color:var(--texto); box-shadow:none; }
+  .pestanas button[aria-selected=true] { background:#fff; color:var(--texto); box-shadow:0 1px 3px rgba(0,0,0,.1); }
+  .pestanas span { background:#ddd5cd; color:var(--texto); border-radius:999px; padding:0 7px; font-size:12px; }
+  .pestanas button[aria-selected=true] span { background:var(--acento); color:#fff; }
+  /* Botón "Subir a TikTok": negro con el borde cian y rosa de TikTok */
+  button[data-studio]:not([data-red]) { background:#000; color:#fff; box-shadow:-2px -2px 0 #25f4ee, 2px 2px 0 #fe2c55; margin:4px 2px; }
+  button[data-studio]:not([data-red]):hover:not(:disabled) { background:#161616; box-shadow:-3px -3px 0 #25f4ee, 3px 3px 0 #fe2c55; }
+  button[data-studio]:not([data-red]):focus-visible { outline-color:#25f4ee; }
+  /* Tema llamativo: fondo oscuro con brillo, degradado naranja a rosa de DROPIA */
+  :root { color-scheme:dark; --fondo:#0e0b14; --caja:#17121f; --texto:#f5f0ff; --suave:#a99cbd; --acento:#ff5a1f; --acento2:#ff2d87; --linea:#2a2236; }
+  body { background:radial-gradient(1100px 600px at 85% -10%, rgba(139,92,246,.20), transparent 60%),
+    radial-gradient(900px 500px at 15% 0%, rgba(255,90,31,.14), transparent 60%), var(--fondo); background-attachment:fixed; }
+  .lado { background:#0a0810; border-right:1px solid #221b2c; }
+  .logo span, .lado nav button.activo { background:linear-gradient(135deg, var(--acento), var(--acento2)); }
+  .logo b, h1 { background:linear-gradient(90deg, #ff8a3d, var(--acento2) 60%, #a78bfa); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  form, .trabajo { background:var(--caja); border-color:var(--linea); box-shadow:0 10px 30px rgba(0,0,0,.35); }
+  input, select { background:#0f0b16; color:var(--texto); border-color:var(--linea); } input::placeholder { color:#6f6382; }
+  button { background:linear-gradient(135deg, var(--acento), var(--acento2)); }
+  button:hover:not(:disabled) { background:linear-gradient(135deg, var(--acento), var(--acento2)); filter:brightness(1.1); box-shadow:0 6px 20px rgba(255,45,135,.35); }
+  button.gris { background:#221b2e; color:var(--texto); border-color:#352b44; }
+  button.gris:hover:not(:disabled) { background:#2b2238; border-color:#4a3d5e; box-shadow:none; }
+  .pico { background:#130f1a; border-color:var(--linea); box-shadow:none; transition:border-color .2s; } .pico:hover { border-color:#4a3d5e; }
+  .meta span:last-child { background:linear-gradient(135deg, var(--acento), var(--acento2)); }
+  a.bajar { background:#221b2e; color:var(--texto); border-color:#352b44; } a.bajar:hover { background:#2b2238; border-color:#4a3d5e; }
+  .barra, .cifra { background:#130f1a; } .barra i { background:linear-gradient(90deg, var(--acento), var(--acento2)); }
+  .fallo { background:#2a1218; color:#ffd6dc; border-color:#ff4d6d; } .fallo b { color:#ff6b81; } #avisos button { color:#ffd6dc !important; }
+  .estado.ok { color:#4ade80; } .estado.err { color:#ff6b81; }
+  .pestanas { background:#17121f; border:1px solid var(--linea); }
+  .pestanas button:hover:not(:disabled) { background:#221b2e; color:var(--texto); filter:none; }
+  .pestanas button[aria-selected=true] { background:#2b2238; color:#fff; } .pestanas span { background:#2a2236; color:var(--texto); }
+  .pestanas button[aria-selected=true] span { background:linear-gradient(135deg, var(--acento), var(--acento2)); }
+  /* Botón de YouTube en su rojo */
+  button[data-publicar] { background:#ff0033; color:#fff; border:0; box-shadow:0 2px 10px rgba(255,0,51,.3); }
+  button[data-publicar]:hover:not(:disabled) { background:#e6002e; filter:none; box-shadow:0 6px 18px rgba(255,0,51,.4); }
+  #ajustes h3 { margin:18px 0 6px; font-size:15px; } #ajustes h3:first-child { margin-top:0; }
+  .checks { list-style:none; padding:0; margin:6px 0; } .checks li { padding:3px 0; } .checks .si { color:#4ade80; } .checks .no { color:#ff6b81; }
+  a.borrar { color:#ff6b81; }
+  button.rojo { background:#ff0033; color:#fff; border:0; box-shadow:0 2px 10px rgba(255,0,51,.3); margin:4px 2px; }
+  button.rojo:hover:not(:disabled) { background:#e6002e; filter:none; box-shadow:0 6px 18px rgba(255,0,51,.4); }
+  .guia { display:grid; gap:14px; }
+  .paso { display:grid; grid-template-columns:minmax(0,260px) 1fr; gap:18px; align-items:center; background:var(--caja); border-radius:12px; padding:16px; }
+  .paso svg { width:100%; height:auto; border-radius:10px; background:#0d0907; border:1px solid var(--linea); }
+  .paso h3 { margin:0 0 6px; font-size:17px; } .paso h3 span { color:var(--acento); margin-right:6px; }
+  .paso p { margin:0 0 6px; color:var(--suave); } .paso p b { color:var(--texto); }
+  .guia h2 { margin:14px 0 0; font-size:20px; }
+  .guia details { background:var(--caja); border-radius:12px; padding:12px 16px; color:var(--suave); }
+  .guia summary { cursor:pointer; color:var(--texto); font-weight:600; }
+  .guia ol { padding-left:20px; margin:8px 0; } .guia code { background:#0d0907; padding:1px 5px; border-radius:4px; }
+  @media (max-width:640px) { .paso { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div id="avisos" role="alert" aria-live="assertive"></div>
+<aside class="lado">
+  <div class="logo"><span>D</span><div><b>DROPIA</b> Clips</div></div>
+  <nav><button class="activo" data-vista="clips">Clips</button><button data-vista="panel">Resultados</button><button data-vista="ajustes">Ajustes</button><button data-vista="guia">Guía</button></nav>
+  <div class="cuentas">
+  <p class="sub" id="yt">YouTube: comprobando...</p>
+  <p class="sub" id="tt">TikTok: comprobando...</p>
+  </div>
+</aside>
+<main>
+  <div id="clips">
+  <h1>Nuevos clips</h1>
+  <p class="sub">Pega el enlace de un directo de Twitch o de un video o directo de YouTube. La app busca los mejores momentos (por el chat, o en videos normales por lo más visto o lo más ruidoso) y monta los 15 mejores en vertical. ¿Primera vez? <a href="#" data-vista="guia">Mira la guía</a>.</p>
+  <form id="nuevo">
+    <input name="url" placeholder="https://www.twitch.tv/canal, twitch.tv/videos/... o https://www.youtube.com/watch?v=..." required>
+    <input name="juego" placeholder="Juego (opcional, solo Twitch)" value="Grand Theft Auto">
+    <button>Empezar</button>
+  </form>
+  <div class="pestanas" id="pestanas" role="tablist" aria-label="Filtrar videos"></div>
+  <div id="lista"></div>
+  </div>
+  <div id="panel" hidden>
+    <h1>Resultados</h1>
+    <section class="trabajo">
+      <div class="cab"><h2>Lo publicado</h2><a href="#" id="actualizar">actualizar</a></div>
+      <div id="cifras">Cargando...</div>
+    </section>
+  </div>
+  <div id="ajustes" hidden>
+    <h1>Ajustes</h1>
+    <section class="trabajo"><div id="ajustes_cuerpo">Cargando...</div></section>
+  </div>
+  <div id="guia" hidden>
+    <h1>Guía rápida</h1>
+    <p class="sub">Cuatro pasos. No hace falta conectar ninguna cuenta para empezar.</p>
+    <div class="guia">
+    <video src="/guia/tutorial.mp4" controls preload="metadata" style="width:100%;border-radius:12px;background:#000"></video>
+    <section class="paso">
+      <svg viewBox="0 0 260 150" aria-hidden="true">
+        <rect x="16" y="50" width="160" height="34" rx="4" fill="#1d1511" stroke="#3a2c22"/>
+        <text x="26" y="72" fill="#b9a896" font-size="11">twitch.tv/videos/...</text>
+        <rect x="186" y="50" width="58" height="34" rx="4" fill="#ff8a3d"/>
+        <text x="194" y="72" fill="#1a0f08" font-size="11" font-weight="700">Empezar</text>
+        <path d="M200 100 l0 26 l7 -7 l6 12 l5 -2 l-6 -12 l10 0 z" fill="#f3e9dc"/>
+      </svg>
+      <div><h3><span>1</span>Pega el enlace</h3>
+        <p>Copia el enlace de un directo o video de <b>Twitch</b> o <b>YouTube</b>, pégalo arriba y pulsa <b>Empezar</b>.</p>
+        <p>La app lee el chat (o lo más visto del video) y elige sola los 15 mejores momentos.</p></div>
+    </section>
+    <section class="paso">
+      <svg viewBox="0 0 260 150" aria-hidden="true">
+        <rect x="16" y="16" width="228" height="118" rx="4" fill="#2a3b4d"/>
+        <rect x="30" y="30" width="120" height="60" rx="4" fill="#3d5470"/>
+        <rect x="168" y="80" width="64" height="44" rx="4" fill="#6b5a4d"/>
+        <circle cx="200" cy="96" r="9" fill="#d9b99b"/><rect x="188" y="106" width="24" height="16" rx="6" fill="#d9b99b"/>
+        <rect x="162" y="74" width="76" height="56" fill="none" stroke="#ff8a3d" stroke-width="2.5" stroke-dasharray="6 4"/>
+      </svg>
+      <div><h3><span>2</span>Marca la cámara (solo la primera vez)</h3>
+        <p>Con cada streamer nuevo, la app te pide <b>arrastrar un rectángulo</b> sobre su webcam. Así la coloca arriba en el vertical.</p>
+        <p>Si no sale en cámara, pulsa <b>No tiene cámara</b>. Se recuerda para los siguientes directos.</p></div>
+    </section>
+    <section class="paso">
+      <svg viewBox="0 0 260 150" aria-hidden="true">
+        <g fill="#1d1511" stroke="#3a2c22">
+          <rect x="20" y="16" width="64" height="118" rx="4"/><rect x="98" y="16" width="64" height="118" rx="4"/><rect x="176" y="16" width="64" height="118" rx="4" stroke-dasharray="5 4"/>
+        </g>
+        <rect x="26" y="22" width="52" height="30" rx="4" fill="#6b5a4d"/><rect x="26" y="54" width="52" height="54" rx="4" fill="#3d5470"/>
+        <rect x="104" y="22" width="52" height="30" rx="4" fill="#6b5a4d"/><rect x="104" y="54" width="52" height="54" rx="4" fill="#3d5470"/>
+        <text x="40" y="124" fill="#7fd18b" font-size="10" font-weight="700">Listo</text>
+        <text x="118" y="124" fill="#7fd18b" font-size="10" font-weight="700">Listo</text>
+        <text x="182" y="80" fill="#ff8a3d" font-size="10">Montando…</text>
+      </svg>
+      <div><h3><span>3</span>Los clips van saliendo</h3>
+        <p>No hace falta esperar al final: cada clip aparece en cuanto está montado, del <b>mejor al peor</b>.</p>
+        <p>Míralo, escríbele un <b>título</b> y, si quieres, pulsa <b>Descargar vertical</b>.</p></div>
+    </section>
+    <section class="paso">
+      <svg viewBox="0 0 260 150" aria-hidden="true">
+        <defs><marker id="flecha" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#ff8a3d"/></marker></defs>
+        <rect x="16" y="22" width="108" height="32" rx="4" fill="#ff0033"/>
+        <text x="27" y="42" fill="#fff" font-size="11" font-weight="700">Subir a YouTube</text>
+        <rect x="136" y="22" width="108" height="32" rx="4" fill="#000" stroke="#25f4ee"/>
+        <text x="151" y="42" fill="#fff" font-size="11" font-weight="700">Subir a TikTok</text>
+        <rect x="16" y="76" width="96" height="58" rx="4" fill="#1d1511" stroke="#3a2c22"/>
+        <rect x="26" y="86" width="30" height="40" rx="3" fill="#3d5470" stroke="#ff8a3d" stroke-width="2"/>
+        <text x="62" y="110" fill="#b9a896" font-size="9">final_01</text>
+        <path d="M118 105 h30" stroke="#ff8a3d" stroke-width="2.5" marker-end="url(#flecha)"/>
+        <rect x="156" y="76" width="88" height="58" rx="4" fill="#1d1511" stroke="#3a2c22" stroke-dasharray="5 4"/>
+        <text x="182" y="109" fill="#b9a896" font-size="10">Studio</text>
+      </svg>
+      <div><h3><span>4</span>Súbelo a YouTube o TikTok</h3>
+        <p>Pulsa <b>Subir a YouTube</b> o <b>Subir a TikTok</b>. La app <b>copia el título y los hashtags</b>, abre la página de subida y te enseña el video en su carpeta.</p>
+        <p>Solo tienes que <b>arrastrar el video</b> a la página, pegar el texto (Ctrl+V) y publicar. Luego marca <b>Ya lo publiqué</b> para tenerlo ordenado.</p></div>
+    </section>
+
+    <h2>Conectar tu cuenta de YouTube y TikTok</h2>
+    <section class="paso">
+      <svg viewBox="0 0 260 150" aria-hidden="true">
+        <rect x="16" y="16" width="228" height="118" rx="4" fill="#1d1511" stroke="#3a2c22"/>
+        <rect x="16" y="16" width="228" height="22" rx="4" fill="#2e241d"/>
+        <circle cx="30" cy="27" r="4" fill="#ff6b6b"/><circle cx="44" cy="27" r="4" fill="#ffd166"/><circle cx="58" cy="27" r="4" fill="#7fd18b"/>
+        <rect x="70" y="58" width="120" height="26" rx="4" fill="#0d0907" stroke="#3a2c22"/>
+        <text x="80" y="75" fill="#b9a896" font-size="10">tu@correo.com</text>
+        <rect x="92" y="94" width="76" height="24" rx="4" fill="#ff8a3d"/>
+        <text x="100" y="110" fill="#1a0f08" font-size="10" font-weight="700">Iniciar sesión</text>
+      </svg>
+      <div><h3>Solo inicia sesión en tu navegador</h3>
+        <p>Abre <b>youtube.com</b> y <b>tiktok.com</b> en Chrome o Edge e inicia sesión con tu cuenta, como siempre. Ya está.</p>
+        <p>Los botones de subir usan esa sesión, así que el video sale en <b>tu canal</b>. La app nunca ve tu contraseña.</p></div>
+    </section>
+    <details>
+      <summary>YouTube dice "confirma que no eres un bot"</summary>
+      <p>Ve a <b>Ajustes</b> y pulsa <b>Iniciar sesión en YouTube</b>. Se abre una ventana: entra con una cuenta de Google (mejor una secundaria) y ciérrala. La app guarda la sesión solo para bajar videos.</p>
+    </details>
+    <details>
+      <summary>Avanzado: publicar en YouTube con un clic y ver vistas en Resultados</summary>
+      <p>Es opcional y lleva unos 10 minutos:</p>
+      <ol>
+        <li>Entra en <b>console.cloud.google.com</b>, crea un proyecto y activa <b>YouTube Data API v3</b> y <b>YouTube Analytics API</b>.</li>
+        <li>En <b>Pantalla de consentimiento de OAuth</b> elige "Externo" y añádete como usuario de prueba.</li>
+        <li>En <b>Credenciales</b> crea un "ID de cliente de OAuth" de tipo <b>App de escritorio</b> y descarga el JSON.</li>
+        <li>Guárdalo como <code>secrets/client_secret.json</code> dentro de la carpeta de la app y reiníciala.</li>
+        <li>En <b>Ajustes</b> aparecerá <b>Conectar mi canal de YouTube</b>.</li>
+      </ol>
+      <p>Ese archivo es tuyo: no lo compartas con nadie.</p>
+    </details>
+    <details>
+      <summary>¿Y publicar en TikTok con un clic?</summary>
+      <p>TikTok solo lo permite a apps que han pasado su revisión. Mientras tanto, el botón <b>Subir a TikTok</b> es la forma rápida: abre TikTok Studio con el video listo para arrastrar.</p>
+    </details>
+    </div>
+  </div>
+</main>
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const etiquetas = {};    // "id-n" -> hashtags que escribiste
+const titulos = {};      // "id-n" -> título que escribiste (no se pierde al refrescar)
+const camaras = {};      // id -> "x,y,w,h" marcado con el ratón
+const ttf = {};          // "id-n" -> opciones de TikTok que marcaste
+let ultimo = "", datos = [], tt = {creador: null}, ytCanal = null;
+
+const mmss = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+const hora = s => `${Math.floor(s / 3600)}:${String(Math.floor(s % 3600 / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const post = (ruta, datos) => fetch(ruta, {method: "POST", body: JSON.stringify(datos)}).then(r => r.json());
+
+$("#nuevo").onsubmit = async e => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const r = await post("/api/nuevo", {url: f.get("url").trim(), juego: f.get("juego")});
+  if (r.error) return alerta(r.error);
+  e.target.url.value = "";
+  refrescar(true);
+};
+function alerta(t) { $("#lista").insertAdjacentHTML("afterbegin", `<p class="estado err">${esc(t)}</p>`); }
+// Alerta grande arriba cuando un video pasa a error mientras miras (los de antes ya se ven en su tarjeta).
+const previo = {};
+function avisoFallo(t) {
+  const antes = previo[t.id];
+  previo[t.id] = t.estado || "";
+  if (!(t.estado || "").startsWith("Error") || antes === undefined || antes.startsWith("Error")) return;
+  $("#avisos").insertAdjacentHTML("beforeend", `<div class="fallo"><div><b>${t.picos.length ? "Algo falló al montar" : "No se puede usar este video"}${t.canal && t.canal !== "desconocido" ? " de " + esc(t.canal) : ""}</b>${esc(t.estado.replace(/^Error:\s*/, ""))}</div><button aria-label="Cerrar" data-cerrar>×</button></div>`);
+}
+
+// Pestañas: un video está "publicado" cuando todos sus clips montados ya se subieron a YouTube o TikTok.
+const grupo = t => { const f = t.picos.filter(p => p.final); return f.length && f.every(p => p.publicado || p.tiktok) ? "subidos" : t.estado === "Listo" && f.length ? "listos" : "curso"; };
+const PESTANAS = {pendientes: ["Pendientes", g => g !== "subidos"], listos: ["Listos para publicar", g => g === "listos"],
+  subidos: ["Publicados", g => g === "subidos"], todos: ["Todos", () => true]};
+let filtro = "pendientes";
+try { if (PESTANAS[localStorage.getItem("filtro")]) filtro = localStorage.getItem("filtro"); } catch {}
+function pintar(todos) {
+  todos.forEach(avisoFallo);
+  $("#pestanas").innerHTML = Object.entries(PESTANAS).map(([k, [txt, ok]]) =>
+    `<button role="tab" aria-selected="${k === filtro}" data-filtro="${k}">${txt} <span>${todos.filter(t => ok(grupo(t))).length}</span></button>`).join("");
+  const trabajos = todos.filter(t => PESTANAS[filtro][1](grupo(t)));
+  if (!todos.length) { $("#lista").innerHTML = `<p class="vacio">Todavía no hay directos. Pega uno arriba.</p>`; return; }
+  if (!trabajos.length) { $("#lista").innerHTML = `<p class="vacio">No hay videos en esta pestaña.</p>`; return; }
+  const limpiar = filtro === "subidos" ? `<p class="fila"><button class="gris" data-borrar="${trabajos.map(t => t.id).join(",")}">${trabajos.length > 1 ? `Eliminar los ${trabajos.length} publicados del PC` : "Eliminar el publicado del PC"}</button></p>` : "";
+  $("#lista").innerHTML = limpiar + trabajos.map(t => {
+    const ocupado = t.estado && !/^(Listo|Error|Marca|Pausado)/.test(t.estado);
+    const clase = t.estado === "Listo" ? "ok" : t.estado.startsWith("Error") ? "err" : "";
+    const pausa = ocupado && !t.estado.startsWith("Pausando") ? `<p class="fila"><button class="gris" data-pausar="${t.id}">Pausar</button></p>`
+      : t.estado === "Pausado" && t.url ? `<p class="fila"><button data-continuar="${t.id}">Continuar</button></p>` : "";
+    const conClip = t.picos.find(p => p.clip);
+    const pedirCam = t.cam === null && conClip && !ocupado;
+    return `<section class="trabajo" data-id="${t.id}">
+      <div class="cab"><h2>${esc(t.canal || t.id)}</h2><span><a href="#" data-carpeta="${t.id}">abrir carpeta</a> · <a href="${esc(t.url || "#")}" target="_blank" rel="noopener">abrir original</a>${ocupado ? "" : ` · <a href="#" class="borrar" data-borrar="${t.id}">eliminar</a>`}</span></div>
+      ${clase === "err" ? `<div class="fallo"><b>${t.picos.length ? "Algo falló al montar" : "No se puede usar este video"}</b>${esc(t.estado.replace(/^Error:\s*/, ""))}${t.url ? `<p class="fila"><button class="gris" data-reintentar="${t.id}">Reintentar</button></p>` : ""}</div>`
+        : `<div class="estado ${clase}">${esc(t.estado || "")}</div>${pausa}`}
+      <div class="avance" data-avance="${t.id}" hidden><div class="barra" role="progressbar" aria-label="Progreso" aria-valuemin="0" aria-valuemax="100"><i></i></div><span class="chat"></span></div>
+      ${pedirCam ? `<div class="camara">
+        <p>Arrastra un rectángulo sobre la cámara del streamer. Se recuerda para los próximos directos de <b>${esc(t.canal)}</b>.</p>
+        <div class="lienzo" data-id="${t.id}"><img src="/api/foto?id=${t.id}&n=${conClip.n}" draggable="false"><div class="rect" hidden></div></div>
+        <p class="fila"><button data-cam="${t.id}">Guardar cámara y montar</button><button class="gris" data-sincam="${t.id}">No tiene cámara</button></p>
+      </div>` : ""}
+      ${!ocupado && t.cam !== null && t.picos.some(p => p.clip && !p.final)
+        ? `<p class="fila"><button data-todos="${t.id}" data-nums="${t.picos.filter(p => p.clip && !p.final).map(p => p.n).join(",")}">Montar los ${t.picos.filter(p => p.clip && !p.final).length} que faltan en vertical</button></p>` : ""}
+      <div class="rejilla">${t.picos.map(p => {
+        const k = `${t.id}-${p.n}`;
+        const video = p.final ? `<video src="/trabajo/${t.id}/final_${String(p.n).padStart(2, "0")}.mp4" controls preload="metadata"></video>
+          <a class="bajar" href="/trabajo/${t.id}/final_${String(p.n).padStart(2, "0")}.mp4" download>Descargar vertical</a>
+          ${p.publicado?.manual ? `<span class="chat">Publicado en YouTube · <a href="#" data-marcar="${t.id}" data-n="${p.n}" data-red="yt" data-quitar="1">no lo publiqué</a></span>`
+            : p.publicado ? `<a class="bajar" href="${esc(p.publicado.url)}" target="_blank" rel="noopener">Publicado: ver en YouTube</a>
+              ${p.publicado.privacidad && p.publicado.privacidad !== "public" ? `<span class="chat">YouTube lo dejó en ${esc(p.publicado.privacidad)}: pasa a público cuando Google verifique la app (o cámbialo en YouTube Studio).</span>` : ""}`
+            : p.subida ? `<span class="estado ${p.subida.startsWith("No") ? "err" : ""}">${esc(p.subida)}</span>` : ""}
+          <input data-tags="${k}" aria-label="Hashtags" placeholder="#hashtags separados por espacio" value="${esc(etiquetas[k] ?? t.hashtags)}">
+          ${p.subida === "Subiendo a YouTube..." || !ytCanal ? "" : `<button class="gris" data-publicar="${t.id}" data-n="${p.n}">${p.publicado ? "Publicar otra vez" : "Publicar en YouTube"}</button>`}
+          <button class="${ytCanal ? "gris" : "rojo"}" data-studio="${t.id}" data-n="${p.n}" data-red="yt">${ytCanal ? "Subir por YouTube Studio" : "Subir a YouTube"}</button>
+          ${p.publicado ? "" : `<span class="chat"><a href="#" data-marcar="${t.id}" data-n="${p.n}" data-red="yt">Ya lo publiqué en YouTube</a></span>`}
+          ${ttBloque(t, p, k)}`
+          : p.clip ? `<video class="bruto" src="/trabajo/${t.id}/clip_${String(p.n).padStart(2, "0")}.mp4" poster="/api/foto?id=${t.id}&n=${p.n}" controls preload="none"></video>` : "";
+        return `<div class="pico">
+          <div class="meta"><span>#${p.n} · <b>${hora(p.inicio)}</b></span><span>${p.puntos} pts</span></div>
+          ${video}
+          <div class="chat">${esc((p.chat || []).slice(0, 6).join(" · "))}</div>
+          ${p.clip || p.final ? `<div class="fila"><input data-titulo="${k}" placeholder="Título (opcional)" value="${esc(titulos[k] || "")}">
+            ${p.clip ? `<button data-montar="${t.id}" data-n="${p.n}" ${ocupado || t.cam === null ? "disabled" : ""}>${p.final ? "Rehacer" : "Montar"}</button>` : ""}</div>` : ""}
+        </div>`;
+      }).join("")}</div>
+    </section>`;
+  }).join("");
+  document.querySelectorAll(".lienzo").forEach(marcador);
+}
+
+// Pantalla de publicar en TikTok con lo que exige su auditoría: cuenta visible, privacidad elegida a mano (sin valor
+// por defecto), interacciones sin marcar, aviso de contenido comercial y la declaración de consentimiento.
+const PRIVACIDAD = {PUBLIC_TO_EVERYONE: "Todo el mundo", MUTUAL_FOLLOW_FRIENDS: "Amigos", FOLLOWER_OF_CREATOR: "Seguidores", SELF_ONLY: "Solo yo"};
+function ttBloque(t, p, k) {
+  const pub = p.tiktok?.manual ? `<span class="chat">Publicado en TikTok · <a href="#" data-marcar="${t.id}" data-n="${p.n}" data-quitar="1">no lo publiqué</a></span>`
+    : !p.tiktok ? `<span class="chat"><a href="#" data-marcar="${t.id}" data-n="${p.n}">Ya lo publiqué en TikTok</a></span>`
+    : `<span class="chat">Publicado en TikTok${p.tiktok.url ? `: <a href="${esc(p.tiktok.url)}" target="_blank" rel="noopener">verlo</a>` : p.tiktok.privacidad === "SELF_ONLY" ? " (solo lo ves tú)" : ""}.</span>`;
+  const ocupado = p.subida_tt && !/^(No|TikTok sigue)/.test(p.subida_tt);
+  const linea = p.subida_tt ? `<span class="estado ${p.subida_tt.startsWith("No") ? "err" : ""}">${esc(p.subida_tt)}</span>` : "";
+  const c = tt.creador;
+  const studio = `<button data-studio="${t.id}" data-n="${p.n}">Subir a TikTok</button>`;
+  if (ocupado || !c) return studio + pub + linea;
+  const f = ttf[k] ||= {};
+  const chk = (nombre, texto, off) => `<label><input type="checkbox" data-ttf="${nombre}" ${f[nombre] && !off ? "checked" : ""} ${off ? "disabled" : ""}> ${texto}</label>`;
+  const falta = f.comercial && !f.propia && !f.ajena;
+  return `${studio}${pub}${linea}<details class="tt" data-ttd="${k}" data-id="${t.id}" data-n="${p.n}" ${f.abierto ? "open" : ""}><summary>Publicar directo (API)</summary>
+    <p class="chat">Se publica en <b>${esc(c.creator_nickname)}</b> con el título y los hashtags de arriba.</p>
+    <select data-ttf="privacidad" aria-label="Quién puede verlo"><option value="" disabled ${f.privacidad ? "" : "selected"}>Quién puede verlo...</option>
+      ${c.privacy_level_options.map(o => `<option value="${o}" ${f.privacidad === o ? "selected" : ""} ${o === "SELF_ONLY" && f.ajena ? `disabled title="El contenido de marca no puede ser privado"` : ""}>${PRIVACIDAD[o] || o}</option>`).join("")}</select>
+    <div>${chk("comentar", "Comentarios", c.comment_disabled)}${chk("duo", "Dúo", c.duet_disabled)}${chk("stitch", "Stitch", c.stitch_disabled)}</div>
+    <div>${chk("comercial", "Es contenido comercial (promociona una marca, producto o servicio)")}</div>
+    ${f.comercial ? `<div>${chk("propia", "Tu marca")}${chk("ajena", "Contenido de marca (de otro, pagado)")}</div>
+      <p class="chat">${falta ? "Indica si promocionas tu marca, la de otro o ambas." : `Tu video se etiquetará como "${f.ajena ? "Colaboración pagada" : "Contenido promocional"}".`}</p>` : ""}
+    <p class="chat">Al publicar, aceptas ${f.ajena ? `la <a href="https://www.tiktok.com/legal/page/global/bc-policy/en" target="_blank" rel="noopener">Política de contenido de marca</a> y ` : ""}la <a href="https://www.tiktok.com/legal/page/global/music-usage-confirmation/en" target="_blank" rel="noopener">Confirmación de uso de música</a> de TikTok. Después TikTok puede tardar unos minutos en mostrarlo en tu perfil.</p>
+    <button class="gris" data-tt="${t.id}" data-n="${p.n}" ${falta || !f.privacidad ? "disabled" : ""}>Publicar en TikTok</button>
+  </details>`;
+}
+document.addEventListener("change", e => {
+  const d = e.target.closest("[data-ttd]"), campo = e.target.dataset.ttf;
+  if (!d || !campo) return;
+  const f = ttf[d.dataset.ttd];
+  f[campo] = e.target.type === "checkbox" ? e.target.checked : e.target.value;
+  if (f.ajena && f.privacidad === "SELF_ONLY") f.privacidad = "";  // lo de marca no puede ser "solo yo"
+  const t = datos.find(t => t.id === d.dataset.id), p = t?.picos.find(p => String(p.n) === d.dataset.n);
+  if (p) { const nuevo = document.createElement("div"); nuevo.innerHTML = ttBloque(t, p, d.dataset.ttd); d.replaceWith($("details", nuevo)); }
+});
+document.addEventListener("toggle", e => { if (e.target.dataset?.ttd) (ttf[e.target.dataset.ttd] ||= {}).abierto = e.target.open; }, true);
+
+// Rectángulo arrastrado sobre la foto -> fracciones x,y,w,h del video
+function marcador(lienzo) {
+  const img = $("img", lienzo), rect = $(".rect", lienzo), id = lienzo.dataset.id;
+  let ini = null;
+  const pos = e => { const b = img.getBoundingClientRect(); return [Math.min(Math.max((e.clientX - b.left) / b.width, 0), 1), Math.min(Math.max((e.clientY - b.top) / b.height, 0), 1)]; };
+  const dibujar = (a, b) => {
+    const [x, y, w, h] = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1])];
+    Object.assign(rect.style, {left: x * 100 + "%", top: y * 100 + "%", width: w * 100 + "%", height: h * 100 + "%"});
+    rect.hidden = false;
+    if (w > 0.03 && h > 0.03) camaras[id] = [x, y, w, h].map(v => v.toFixed(3)).join(",");
+  };
+  if (camaras[id]) { const [x, y, w, h] = camaras[id].split(",").map(Number); dibujar([x, y], [x + w, y + h]); }
+  lienzo.onpointerdown = e => { ini = pos(e); lienzo.setPointerCapture(e.pointerId); };
+  lienzo.onpointermove = e => ini && dibujar(ini, pos(e));
+  lienzo.onpointerup = e => { if (ini) dibujar(ini, pos(e)); ini = null; };
+}
+
+document.addEventListener("input", e => {
+  if (e.target.dataset.titulo) titulos[e.target.dataset.titulo] = e.target.value;
+  if (e.target.dataset.tags) etiquetas[e.target.dataset.tags] = e.target.value;
+});
+document.addEventListener("click", async e => {
+  if (e.target.dataset.cerrar !== undefined) return e.target.parentElement.remove();
+  const fb = e.target.closest("[data-filtro]");
+  if (fb) { filtro = fb.dataset.filtro; try { localStorage.setItem("filtro", filtro); } catch {} return pintar(datos); }
+  const c = e.target.closest("[data-carpeta]");
+  if (c) { e.preventDefault(); return post("/api/carpeta", {id: c.dataset.carpeta}); }
+  if (e.target.id === "sesion_yt") {
+    const r = await post("/api/sesion_yt", {});
+    if (r.error) return alerta(r.error);
+    cargarAjustes();
+    const mirar = setInterval(async () => {
+      const h = await (await fetch("/api/ajustes")).json();
+      if (h.sesion_yt !== "abierta") { clearInterval(mirar); cargarAjustes(); }
+    }, 3000);
+    return;
+  }
+  if (e.target.id === "conectar_tt") {
+    e.preventDefault();
+    const r = await post("/api/conectar_tt", {});
+    if (r.error) return alerta(r.error);
+    [20, 60, 180].forEach(s => setTimeout(cuentaTT, s * 1000));
+    return;
+  }
+  if (e.target.id === "conectar") {
+    e.preventDefault();
+    const r = await post("/api/conectar", {});
+    if (r.error) return alerta(r.error);
+    [15, 40, 90].forEach(s => setTimeout(() => { cuentaYT(); cargarPanel(); cargarAjustes(); }, s * 1000));
+    return;
+  }
+  const mc = e.target.closest("[data-marcar]");
+  if (mc) {
+    e.preventDefault();
+    const r = await post("/api/marcar", {id: mc.dataset.marcar, n: mc.dataset.n, red: mc.dataset.red || "tt", quitar: !!mc.dataset.quitar});
+    if (r.error) return alerta(r.error);
+    ultimo = ""; return refrescar(true);
+  }
+  const vi = e.target.closest("[data-vista]");
+  if (vi) {
+    e.preventDefault();
+    document.querySelectorAll("[data-vista]").forEach(b => b.classList.toggle("activo", b.dataset.vista === vi.dataset.vista));
+    ["clips", "panel", "ajustes", "guia"].forEach(v => $("#" + v).hidden = v !== vi.dataset.vista);
+    if (vi.dataset.vista === "panel") cargarPanel();
+    if (vi.dataset.vista === "ajustes") cargarAjustes();
+    return;
+  }
+  const pa = e.target.closest("[data-pausar]");
+  if (pa) {
+    pa.disabled = true; pa.textContent = "Pausando...";
+    const r = await post("/api/pausar", {id: pa.dataset.pausar});
+    if (r.error) return alerta(r.error);
+    ultimo = ""; return refrescar(true);
+  }
+  const co = e.target.closest("[data-continuar]");
+  if (co) {
+    const t = datos.find(x => x.id === co.dataset.continuar);
+    co.disabled = true; co.textContent = "En cola...";
+    const r = await post("/api/nuevo", {url: t.url, juego: t.juego || ""});
+    if (r.error) return alerta(r.error);
+    ultimo = ""; return refrescar(true);
+  }
+  const ri = e.target.closest("[data-reintentar]");
+  if (ri) {
+    const t = datos.find(x => x.id === ri.dataset.reintentar);
+    ri.disabled = true; ri.textContent = "En cola...";
+    const r = await post("/api/nuevo", {url: t.url, juego: t.juego || ""});
+    if (r.error) return alerta(r.error);
+    ultimo = ""; return refrescar(true);
+  }
+  const del = e.target.closest("[data-borrar]");
+  if (del) {
+    e.preventDefault();
+    const ids = del.dataset.borrar.split(",");
+    const nombre = ids.length > 1 ? `estos ${ids.length} directos` : `"${(datos.find(t => t.id === ids[0]) || {}).canal || ids[0]}"`;
+    if (!confirm(`¿Eliminar ${nombre} y sus videos del PC? No se puede deshacer.
+Lo ya publicado sigue en YouTube y TikTok y en Resultados.`)) return;
+    const r = await post("/api/borrar", {id: ids[0], ids});
+    if (r.error) return alerta(r.error);
+    ultimo = ""; return refrescar(true);
+  }
+  if (e.target.id === "desconectar") { e.preventDefault(); await post("/api/desconectar", {}); cuentaYT(); return cargarAjustes(); }
+  if (e.target.id === "actualizar_ytdlp") {
+    e.target.disabled = true; e.target.textContent = "Actualizando...";
+    const r = await post("/api/actualizar", {});
+    if (r.error) alerta("No se pudo actualizar yt-dlp: " + r.error);
+    return cargarAjustes();
+  }
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.studio) {  // sin API: copia título y hashtags, abre TikTok Studio y señala el archivo para arrastrarlo
+    const id = b.dataset.studio, n = b.dataset.n, k = `${id}-${n}`, yt = b.dataset.red === "yt", red = yt ? "YouTube" : "TikTok";
+    const tags = ($(`[data-tags="${k}"]`)?.value || "").split(/\s+/).filter(Boolean).map(w => w.startsWith("#") ? w : "#" + w);
+    let texto = (titulos[k] || "").trim().slice(0, yt ? 100 : undefined);
+    for (const h of tags) if (!yt || (texto + " " + h).trim().length <= 100) texto = (texto + " " + h).trim();  // el título de YouTube admite 100
+    let copiado = false;
+    // si el portapapeles se queda esperando un permiso, a los 1,5 s se sigue sin copiar en vez de colgar el botón
+    try { copiado = !!texto && await Promise.race([navigator.clipboard.writeText(texto).then(() => true), new Promise(r => setTimeout(r, 1500, false))]); } catch {}
+    window.open(yt ? "https://www.youtube.com/upload" : "https://www.tiktok.com/tiktokstudio/upload", "_blank", "noopener");
+    const r = await post("/api/mostrar_clip", {id, n});
+    if (r.error) return alerta(r.error);
+    b.textContent = copiado ? `Arrastra el video a ${red} y pega el texto (Ctrl+V)` : `Arrastra el video a ${red}`;
+    return;
+  }
+  if (b.dataset.cam) {
+    if (!camaras[b.dataset.cam]) return alerta("Primero arrastra un rectángulo sobre la cámara.");
+    await post("/api/camara", {id: b.dataset.cam, cam: camaras[b.dataset.cam]});
+  } else if (b.dataset.sincam) {
+    await post("/api/camara", {id: b.dataset.sincam, cam: ""});
+  } else if (b.dataset.publicar) {
+    const id = b.dataset.publicar, n = b.dataset.n, titulo = (titulos[`${id}-${n}`] || "").trim();
+    if (!titulo) return alerta("Escribe el título en la casilla del clip antes de publicar.");
+    const r = await post("/api/publicar", {id, n, titulo, hashtags: $(`[data-tags="${id}-${n}"]`)?.value || ""});
+    if (r.error) return alerta(r.error);
+  } else if (b.dataset.tt) {
+    const id = b.dataset.tt, n = b.dataset.n, k = `${id}-${n}`, titulo = (titulos[k] || "").trim();
+    if (!titulo) return alerta("Escribe el título en la casilla del clip antes de publicar.");
+    const r = await post("/api/publicar_tt", {id, n, titulo, hashtags: $(`[data-tags="${k}"]`)?.value || "", ...ttf[k]});
+    if (r.error) return alerta(r.error);
+  } else if (b.dataset.todos) {
+    const id = b.dataset.todos, nums = b.dataset.nums.split(",");
+    await post("/api/montar", {id, nums, titulos: Object.fromEntries(nums.map(n => [n, titulos[`${id}-${n}`] || ""]))});
+  } else if (b.dataset.montar) {
+    const id = b.dataset.montar, n = b.dataset.n;
+    await post("/api/montar", {id, nums: [n], titulos: {[n]: titulos[`${id}-${n}`] || ""}});
+  } else return;
+  refrescar(true);
+});
+
+// La barra se actualiza en su sitio, sin repintar la tarjeta (no corta el video que estés viendo).
+function barras(trabajos) {
+  for (const t of trabajos) {
+    const el = $(`[data-avance="${t.id}"]`), p = t.progreso;
+    if (!el) continue;
+    el.hidden = !p;
+    if (!p) continue;
+    const b = $(".barra", el), indef = p.pct === undefined;
+    b.classList.toggle("indef", indef);
+    $("i", b).style.width = indef ? "" : p.pct + "%";
+    indef ? b.removeAttribute("aria-valuenow") : b.setAttribute("aria-valuenow", p.pct);
+    $("span", el).textContent = indef ? `Lleva ${mmss(p.lleva)}. Suele tardar entre 1 y 8 min según lo largo que sea el video.`
+      : `${p.pct}% · faltan unos ${mmss(Math.max(p.resta, 5))}`;
+  }
+}
+async function refrescar(forzar) {
+  try {
+    const trabajos = await (await fetch("/api/estado")).json();
+    // Solo se repinta si algo cambió (sin contar la barra) y no estás escribiendo o marcando la cámara.
+    datos = trabajos;
+    const enUso = document.activeElement?.dataset?.titulo !== undefined || document.activeElement?.dataset?.tags !== undefined
+      || !!document.activeElement?.closest?.(".tt");
+    const fijo = JSON.stringify(trabajos.map(({progreso, ...t}) => t));
+    if (fijo !== ultimo && (forzar || !enUso)) { ultimo = fijo; pintar(trabajos); }
+    barras(trabajos);
+  } catch { /* la app se cerró */ }
+}
+const num = n => (n ?? 0).toLocaleString("es");
+async function cargarPanel() {
+  $("#cifras").textContent = "Cargando...";
+  let r;
+  try { r = await (await fetch("/api/resultados")).json(); } catch { $("#cifras").textContent = "La app no responde."; return; }
+  if (r.error) { $("#cifras").innerHTML = `<p class="estado err">${esc(r.error)}</p>`; return; }
+  const pub = r.publicados, suma = k => pub.reduce((a, p) => a + (p[k] || 0), 0);
+  const ingresos = r.ingresos == null ? "—" : `$${r.ingresos.toFixed(2)}`;
+  const aviso = r.aviso_ingresos === "permiso"
+    ? `Para ver los ingresos, YouTube pide un permiso más: <a href="#" id="conectar">Activar ingresos</a> (vuelves a entrar con Google).`
+    : r.aviso_ingresos ? `Ingresos: YouTube aún no paga a este canal. Hace falta entrar en el Programa de Socios de YouTube (para Shorts: 1.000 suscriptores y 10 millones de vistas de Shorts en 90 días).`
+    : `Ingresos estimados en USD; YouTube los actualiza con unos 2 días de retraso.`;
+  $("#cifras").innerHTML = `<div class="cifras">
+      <div class="cifra"><b>${pub.length}</b><span>videos publicados</span></div>
+      <div class="cifra"><b>${num(suma("vistas"))}</b><span>vistas</span></div>
+      <div class="cifra"><b>${num(suma("megusta"))}</b><span>me gusta</span></div>
+      <div class="cifra"><b>${ingresos}</b><span>ingresos</span></div>
+    </div>
+    <p class="aviso">${aviso} Las cifras son solo de YouTube.</p>
+    ${pub.length ? `<div class="tablaca"><table class="tabla"><tr><th>Video</th><th>Streamer</th><th>Fecha</th><th class="n">Vistas</th><th class="n">Me gusta</th><th class="n">Coment.</th><th class="n">Ingresos</th></tr>
+      ${pub.map(p => `<tr><td><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.titulo)}</a></td><td>${esc(p.canal)}</td><td>${esc(p.fecha || "")}</td>
+        <td class="n">${num(p.vistas)}</td><td class="n">${num(p.megusta)}</td><td class="n">${num(p.comentarios)}</td>
+        <td class="n">${p.ingresos == null ? "—" : "$" + p.ingresos.toFixed(2)}</td></tr>`).join("")}</table></div>`
+      : `<p class="aviso">Todavía no has publicado nada. Pulsa "Publicar en YouTube" en un vertical montado.</p>`}`;
+}
+$("#actualizar").onclick = e => { e.preventDefault(); cargarPanel(); };
+cargarPanel();
+setInterval(cargarPanel, 5 * 60 * 1000);
+
+async function cuentaYT() {
+  const {canal} = await (await fetch("/api/youtube")).json();
+  $("#yt").innerHTML = canal ? `YouTube conectado: <b>${esc(canal)}</b>` : `YouTube: listo, se sube por YouTube Studio`;
+  if ((canal || null) !== ytCanal) { ytCanal = canal || null; ultimo = ""; refrescar(true); }
+  return canal;
+}
+async function cargarAjustes() {
+  const [h, {canal}] = await Promise.all([(await fetch("/api/ajustes")).json(), (await fetch("/api/youtube")).json()]);
+  const ok = (v, txt) => `<li class="${v ? "si" : "no"}">${v ? "✓" : "✗"} ${txt}</li>`;
+  $("#ajustes_cuerpo").innerHTML = `
+    <h3>YouTube</h3>
+    ${canal ? `<p>Conectado a <b>${esc(canal)}</b>.</p><p class="fila"><button class="gris" id="conectar">Cambiar de canal</button><button class="gris" id="desconectar">Desconectar</button></p>`
+      : `<p>No hace falta conectar nada: el botón <b>Subir a YouTube</b> abre YouTube Studio con tu sesión del navegador.</p>
+         ${h.google ? `<p>Opcional: conecta tu canal para publicar con un clic y ver vistas e ingresos en Resultados.</p><p class="fila"><button class="gris" id="conectar">Conectar mi canal de YouTube</button></p>` : ""}`}
+    <h3>Bajar de YouTube</h3>
+    ${h.sesion_yt === "abierta" ? `<p>Se ha abierto una ventana: inicia sesión en YouTube y <b>ciérrala</b> al terminar.</p>`
+      : h.cookies ? `<p>✓ Sesión de YouTube guardada: los videos se bajan con tu cuenta.</p>
+         <p class="fila"><button class="gris" id="sesion_yt">Volver a iniciar sesión</button></p>`
+      : `<p>Si YouTube dice <b>"confirma que no eres un bot"</b>, inicia sesión una vez con una cuenta de Google
+         (mejor una secundaria). Se abre una ventana aparte; al cerrarla la app guarda la sesión.</p>
+         <p class="fila"><button class="gris" id="sesion_yt"${h.navegador ? "" : " disabled"}>Iniciar sesión en YouTube</button></p>`}
+    ${h.sesion_yt && !["abierta", "ok"].includes(h.sesion_yt) ? `<p class="estado err">${esc(h.sesion_yt)}</p>` : ""}
+    <h3>TikTok</h3>
+    <p>No hace falta conectar nada: el botón <b>Subir a TikTok</b> abre TikTok Studio con tu sesión del navegador.</p>
+    <h3>Programas que usa la app</h3>
+    <ul class="checks">${ok(h.ffmpeg, "ffmpeg " + (h.ffmpeg || "").split(" ")[2])}${ok(h["yt-dlp"], "yt-dlp " + (h["yt-dlp"] || ""))}${ok(h.node, "Node.js " + (h.node || ""))}</ul>
+    ${!h.ffmpeg || !h.node ? `<p class="estado err">Falta algún programa: vuelve a ejecutar <b>instalar.bat</b>.</p>` : ""}
+    <p class="fila"><button class="gris" id="actualizar_ytdlp">Actualizar yt-dlp</button></p>
+    <p class="sub">Si un enlace de Twitch o YouTube deja de bajarse, actualiza yt-dlp: esas webs cambian a menudo.</p>`;
+}
+async function cuentaTT() {
+  try { tt = await (await fetch("/api/tiktok")).json(); } catch { tt = {creador: null}; }
+  $("#tt").innerHTML = tt.creador ? `TikTok conectado: <b>${esc(tt.creador.creator_nickname)}</b> · <a href="#" id="conectar_tt">cambiar</a>`
+    : `TikTok: listo, se sube por TikTok Studio`;
+  ultimo = "";
+  refrescar(true);
+}
+cuentaYT();
+cuentaTT();
+cargarAjustes();
+refrescar(true);
+setInterval(refrescar, 3000);
+</script>
+</body>
+</html>
